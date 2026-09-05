@@ -1,0 +1,541 @@
+{
+  "name": "My workflow 11",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nutrition-check",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "barcode",
+                "value": "3017620422003"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        64
+      ],
+      "id": "c3bb401c-bc93-463b-aa49-04461c499e7e",
+      "name": "Webhook - Nutrition Check",
+      "webhookId": "5d96188a-69e4-4079-ba95-a445161af304"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9bb8b5da-6df6-4296-931c-88ce1e74bf1f",
+              "leftValue": "={{ $json.body.barcode }}",
+              "rightValue": "={{ $json.body.barcode }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "ca230058-77cc-450d-a245-cf4d0bc6c9ef",
+              "leftValue": "={{ $json.body.barcode }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        64
+      ],
+      "id": "614f5c4b-0e35-45e9-a173-465d9b80b55a",
+      "name": "Validate - Barcode Present"
+    },
+    {
+      "parameters": {
+        "url": "https://world.openfoodfacts.org/api/v2/product/{barcode}.json?fields=product_name,brands,nutriscore_grade,nutriments",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "3c54b998-9350-4c77-ada1-f7bc95899d51",
+      "name": "API Call - Open Food Facts"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "12c8a08a-7116-44e0-9587-e2200796825a",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "1",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        -128
+      ],
+      "id": "cf047861-ec7c-48e4-80b3-ef0b480cd3a2",
+      "name": "Validate - Product Found"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Producto no encontrado\",\n  \"mensaje\": \"No encontramos ningún alimento registrado con el código de barras ingresado.\",\n  \"ejemplo_valido\": {\n    \"barcode\": \"3017620422003\"\n  }\n}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1120,
+        -32
+      ],
+      "id": "84a7573e-bca7-4de4-aee5-ac0c1c612aec",
+      "name": "Respond - Product Not Found"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bc6aed67-b3a5-4a6a-8c9c-f84898f8e183",
+              "leftValue": "={{ $json.product.nutriments.sugars_100g }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "ff255adb-1837-41d2-9f15-73394fbf31b3",
+              "leftValue": "={{ $json.product.nutriments['energy-kcal_100g'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        -224
+      ],
+      "id": "2d988e27-ad56-49aa-90e3-17fd258e1662",
+      "name": "Validate - Nutrients Available"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"product_name\": \"={{ $json.product.product_name || 'Producto sin nombre' }}\",\n  \"brand\": \"={{ $json.product.brands || 'Sin marca' }}\",\n  \"nutriscore_grade\": \"={{ $json.product.nutriscore_grade || 'N/A' }}\",\n  \"sugars_100g\": \"={{ $json.product.nutriments.sugars_100g || 0 }}\",\n  \"salt_100g\": \"={{ $json.product.nutriments.salt_100g || 0 }}\",\n  \"fat_100g\": \"={{ $json.product.nutriments.fat_100g || 0 }}\",\n  \"energy_kcal\": \"={{ $json.product.nutriments['energy-kcal_100g'] || $json.product.nutriments['energy_100g'] || 0 }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1344,
+        -320
+      ],
+      "id": "84ab8d07-c44a-46ae-b779-a76858325c5b",
+      "name": "Set - Flatten Variables"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"datos_insuficientes\",\n  \"mensaje\": \"El producto existe en Open Food Facts, pero no cuenta con la información nutrimental necesaria para clasificarlo.\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1344,
+        -128
+      ],
+      "id": "d065af44-077a-4564-88ee-baba6aa77de8",
+      "name": "Respond - Insufficient Data"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Código de barras no válido o ausente\",\n  \"descripcion\": \"SnackCheck analiza la calidad nutricional de productos empacados a partir de su código de barras.\",\n  \"campo_requerido\": \"barcode (numérico)\",\n  \"ejemplo_uso\": { \"barcode\": \"3017620422003\" }\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        448,
+        160
+      ],
+      "id": "0392063a-3e28-44d5-9570-c6d19cec346e",
+      "name": "Respond - Autodocumentation"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "910ba277-de00-4822-903a-a6df49b6a446",
+              "leftValue": "={{ $json.body.barcode }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        -32
+      ],
+      "id": "a533e07f-b387-485a-b324-e2bf3a987a9c",
+      "name": "Validate - Barcode Is Numeric"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "35b2e757-62bf-4b07-b7db-cd396d9fe275",
+              "name": "sugar_traffic_light",
+              "value": "={{ Number($json.sugars_100g || 0) <= 5 ? 'bajo' : (Number($json.sugars_100g || 0) > 22.5 ? 'alto' : 'moderado') }}",
+              "type": "string"
+            },
+            {
+              "id": "d430876c-5e56-420d-9157-cb6c8c85d76b",
+              "name": "salt_traffic_light",
+              "value": "={{ Number($json.salt_100g || 0) <= 0.3 ? 'bajo' : (Number($json.salt_100g || 0) > 1.5 ? 'alto' : 'moderado') }}",
+              "type": "string"
+            },
+            {
+              "id": "498af4d8-dee4-4531-8653-08ded618a99b",
+              "name": "fat_traffic_light",
+              "value": "={{ Number($json.fat_100g || 0) <= 3 ? 'bajo' : (Number($json.fat_100g || 0) > 17.5 ? 'alto' : 'moderado') }}",
+              "type": "string"
+            },
+            {
+              "id": "1ccb979b-3c0a-4390-887a-a7fedc93da6f",
+              "name": "concern_score",
+              "value": "={{ ([Number($json.sugars_100g || 0) > 22.5, Number($json.salt_100g || 0) > 1.5, Number($json.fat_100g || 0) > 17.5].filter(Boolean)).length }}",
+              "type": "number"
+            },
+            {
+              "id": "cc0cf750-757b-4dd4-9e05-5d67e3a4c3eb",
+              "name": "traffic_light_reading",
+              "value": "={{ (([Number($json.sugars_100g || 0) > 22.5, Number($json.salt_100g || 0) > 1.5, Number($json.fat_100g || 0) > 17.5].filter(Boolean)).length >= 2) ? 'no saludable' : ((([Number($json.sugars_100g || 0) > 22.5, Number($json.salt_100g || 0) > 1.5, Number($json.fat_100g || 0) > 17.5].filter(Boolean)).length === 1) ? 'moderado' : 'saludable') }}",
+              "type": "string"
+            },
+            {
+              "id": "2cafc0ad-9087-4b2c-9949-2f1b7a65dd9c",
+              "name": "nutriscore_reading",
+              "value": "={{ ['a','b'].includes(($json.nutriscore_grade || '').toLowerCase()) ? 'saludable' : (['d','e'].includes(($json.nutriscore_grade || '').toLowerCase()) ? 'no saludable' : (($json.nutriscore_grade || '').toLowerCase() === 'c' ? 'moderado' : 'unknown')) }}",
+              "type": "string"
+            },
+            {
+              "id": "48309b79-d3f2-461f-b507-7c1e1a71bc83",
+              "name": "overall_verdict",
+              "value": "={{ ($json.nutriscore_reading === 'unknown' || !$json.nutriscore_reading) ? $json.traffic_light_reading : (['no saludable', 'moderado', 'saludable'].find(v => [$json.traffic_light_reading, $json.nutriscore_reading].includes(v)) || $json.traffic_light_reading) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1568,
+        -320
+      ],
+      "id": "6d8d3479-dece-4e5b-8995-c8963d5aa4e3",
+      "name": "Set - Health Logic"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{{\n  '🏷️ Producto: ' + $('Set - Health Logic').item.json.product_name + '\\n' +\n  ($('Set - Health Logic').item.json.overall_verdict === 'saludable' ? '🟢 Veredicto: Saludable' : ($('Set - Health Logic').item.json.overall_verdict === 'moderado' ? '🟡 Veredicto: Moderado' : '🔴 Veredicto: No saludable')) + '\\n\\n' +\n  '📊 Valores clave (por 100g):\\n' +\n  (($('Set - Health Logic').item.json.sugar_traffic_light === 'alto' || $('Set - Health Logic').item.json.sugar_traffic_light === 'red') ? '🔴' : '🟢') + ' Azúcar: ' + $('Set - Health Logic').item.json.sugars_100g + 'g (' + $('Set - Health Logic').item.json.sugar_traffic_light + ')\\n' +\n  (($('Set - Health Logic').item.json.salt_traffic_light === 'alto' || $('Set - Health Logic').item.json.salt_traffic_light === 'red') ? '🔴' : '🟢') + ' Sal: ' + $('Set - Health Logic').item.json.salt_100g + 'g (' + $('Set - Health Logic').item.json.salt_traffic_light + ')\\n' +\n  (($('Set - Health Logic').item.json.fat_traffic_light === 'alto' || $('Set - Health Logic').item.json.fat_traffic_light === 'red') ? '🔴' : '🟢') + ' Grasa: ' + $('Set - Health Logic').item.json.fat_100g + 'g (' + $('Set - Health Logic').item.json.fat_traffic_light + ')\\n\\n' +\n  '📝 Análisis:\\n' +\n  $json.message.content\n}}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2160,
+        -320
+      ],
+      "id": "a6555a3b-db34-4bd8-8114-9088c0bb4e22",
+      "name": "Respond - Success"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Escribe un párrafo de veredicto corto sobre el producto {{ $json.product_name }}.\n\nDatos nutricionales por 100g:\n- Azúcar: {{ $json.sugars_100g }}g (Semáforo: {{ $json.sugar_traffic_light }})\n- Sal: {{ $json.salt_100g }}g (Semáforo: {{ $json.salt_traffic_light }})\n- Grasa: {{ $json.fat_100g }}g (Semáforo: {{ $json.fat_traffic_light }})\n- Nutri-Score: {{ $json.nutriscore_grade }}\n- Veredicto general: {{ $json.overall_verdict }}\n\nInstrucciones de tono:\n{{ $json.overall_verdict === 'no saludable' ? 'Usa un tono cauteloso, de advertencia y con delicadeza, sugiriendo moderación o alternativas.' : 'Usa un tono alentador, positivo y amable reconociendo que es una opción adecuada o aceptable.' }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        -320
+      ],
+      "id": "2dd826a9-9bcc-4319-aedb-88a71d3a5c8e",
+      "name": "AI - Health Verdict",
+      "credentials": {
+        "openAiApi": {
+          "id": "RUwaynw6CXgN6jIX",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        672,
+        64
+      ],
+      "id": "cc7c0354-d36a-4799-a483-614cbfc22900",
+      "name": "Respond - Barcode Format Error"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Nutrition Check": {
+      "main": [
+        [
+          {
+            "node": "Validate - Barcode Present",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate - Barcode Present": {
+      "main": [
+        [
+          {
+            "node": "Validate - Barcode Is Numeric",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Autodocumentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API Call - Open Food Facts": {
+      "main": [
+        [
+          {
+            "node": "Validate - Product Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate - Product Found": {
+      "main": [
+        [
+          {
+            "node": "Validate - Nutrients Available",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Product Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate - Nutrients Available": {
+      "main": [
+        [
+          {
+            "node": "Set - Flatten Variables",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Insufficient Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate - Barcode Is Numeric": {
+      "main": [
+        [
+          {
+            "node": "API Call - Open Food Facts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Barcode Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Flatten Variables": {
+      "main": [
+        [
+          {
+            "node": "Set - Health Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Health Logic": {
+      "main": [
+        [
+          {
+            "node": "AI - Health Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI - Health Verdict": {
+      "main": [
+        [
+          {
+            "node": "Respond - Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bb2bf1ce-0e1e-4d95-82c4-c38ce8137562",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1d7d11798990eada8ad526ce4684692a35658d94a34aa5cc666eb001d0666b9c"
+  },
+  "nodeGroups": [],
+  "id": "4BqScHemQxkA3nob",
+  "tags": []
+}
