@@ -1,0 +1,22 @@
+# Changelog
+
+Todos los cambios notables en el proyecto **SnackCheck** se registrarán en este archivo.
+
+El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+---
+
+## [1.0.0] - 2026-09-04
+
+### Añadido
+* Flujo de trabajo principal en n8n para la evaluación automatizada de snacks mediante código de barras.
+* Punto de entrada mediante nodo **Webhook** (método `POST`) para recibir solicitudes de análisis.
+* Validación de entrada para verificar la presencia del parámetro `barcode` y asegurar que contenga únicamente caracteres numéricos.
+* Integración con la API pública de **Open Food Facts** para la recuperación de perfiles nutricionales.
+* Agente de Inteligencia Artificial (LLM) configurado para aplanar datos complejos y generar un veredicto de salud en lenguaje accesible.
+* Manejo estandarizado de respuestas HTTP de error:
+  * **400 Bad Request**: Para código de barras faltante o no numérico.
+  * **404 Not Found**: Para productos no registrados en la base de datos.
+  * **422 Unprocessable Entity**: Para productos encontrados sin información nutricional suficiente.
+* Respuesta exitosa **HTTP 200 OK** con el reporte estructurado de la IA.
+* Documentación técnica del proyecto (`README.md`), matriz de casos de prueba (`TEST_CASES.md`) y diagrama de flujo visual en Excalidraw.
